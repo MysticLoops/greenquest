@@ -32,14 +32,23 @@ const upload = multer({ storage: storage });
 app.use(cors({
   origin: function (origin, callback) {
     const allowedOrigins = [
-      "http://localhost:5173",
       "https://greenquest-1.onrender.com",
       "https://greenquest-kappa.vercel.app"
     ];
+    
+    // In development, allow all localhost origins and requests with no origin
+    if (process.env.NODE_ENV !== 'production') {
+      if (!origin || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
+        return callback(null, true);
+      }
+    }
+    
+    // In production, only allow specific origins
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      callback(new Error('This origin is not allowed by CORS'));
+      console.error(`CORS blocked origin: ${origin}`);
+      callback(new Error(`This origin is not allowed by CORS: ${origin}`));
     }
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -201,6 +210,8 @@ app.post('/api/register', async (req, res) => {
     if (!username) return res.status(400).json({ message: 'Username is required' });
     const existingUserPhone = await User.findOne({ phone });
     if (existingUserPhone) return res.status(400).json({ message: 'User with this phone number already exists' });
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) return res.status(400).json({ message: 'Username already taken. Please choose a different username.' });
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new User({ fullName, phone, username, email, village, householdSize, address, password: hashedPassword });
     await user.save();

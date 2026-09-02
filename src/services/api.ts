@@ -1,7 +1,10 @@
 import axios from 'axios';
 
-//const API_BASE_URL = 'http://localhost:5000/api';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+// Debug: Log the API base URL to verify it's correct
+console.log('API Base URL:', API_BASE_URL);
+console.log('VITE_API_URL env var:', import.meta.env.VITE_API_URL);
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -15,6 +18,9 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Debug: Log the full URL being requested
+  const fullUrl = config.baseURL ? `${config.baseURL}${config.url}` : config.url;
+  console.log('API Request:', config.method?.toUpperCase(), fullUrl);
   return config;
 });
 
@@ -40,7 +46,7 @@ export const authAPI = {
     return response.data;
   },
     addGamePoints: async (pointsToAdd: number, gameName: string) => {
-    const response = await api.post('users/add-game-points', { pointsToAdd, gameName });
+    const response = await api.post('/users/add-game-points', { pointsToAdd, gameName });
     return response.data;
   }
 };
